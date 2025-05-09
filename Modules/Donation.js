@@ -10,7 +10,7 @@ const DonationSchema = new Schema({
   },
   amount: {
     type: String,
-    required: true,
+    required: true, 
   },
   donationType: {
     type: mongoose.Schema.Types.ObjectId,

@@ -57,4 +57,63 @@ router.get("/getDonorByContact/:contact", errorHandling(async (req, res) => {
 }));
 
 
+router.get("/getDonorById/:id", errorHandling(async (req, res) => {
+    const { id } = req.params;
+
+    const donor = await User.findById(id)
+        .populate("districtId")
+        .populate("zoneId")
+        .populate("ucId");
+
+    if (!donor) {
+        return res.status(404).json({ message: "Donor not found" });
+    }
+
+    res.json(donor);
+}));
+
+
+router.put("/updateDonor/:id", errorHandling(async (req, res) => {
+    const { name, address, contact, districtId, zoneId, ucId } = req.body;
+    const { id } = req.params;
+
+    if (!name || !contact || !districtId || !zoneId || !ucId) {
+        return res.status(400).json({
+            message: "Please enter complete information"
+        });
+    }
+
+    const existingDonor = await User.findById(id);
+    if (!existingDonor) {
+        return res.status(404).json({
+            message: "Donor not found"
+        });
+    }
+
+    // Check for duplicate contact, excluding the current donor
+    const contactExists = await User.findOne({ contact, _id: { $ne: id } });
+    if (contactExists) {
+        return res.status(400).json({
+            message: "Another donor with this contact already exists."
+        });
+    }
+
+    existingDonor.name = name;
+    existingDonor.address = address;
+    existingDonor.contact = contact;
+    existingDonor.districtId = districtId;
+    existingDonor.zoneId = zoneId;
+    existingDonor.ucId = ucId;
+
+    const updatedDonor = await existingDonor.save();
+    res.json(updatedDonor);
+}));
+
+
+router.delete("/delDonor/:id", errorHandling(async (req, res) => {
+    const deleteDonor = await User.findByIdAndDelete(req.params.id)
+    if(!deleteDonor) return res.status(404).json({message: "Donor not found"})
+    res.json({message: "Donor deleted successfully"})
+}))
+
 export default router

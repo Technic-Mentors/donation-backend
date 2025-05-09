@@ -17,4 +17,35 @@ router.get("/getAllZone", errorHandling (async (req, res) => {
     res.json(getZone);
 }))
 
+router.get("/getZoneById/:id", errorHandling (async (req, res) => {
+    const ZonebyId = await Zone.findById(req.params.id);
+    if (!ZonebyId){
+       return res.status(404).json({message: "Zone not found"}) 
+    }
+    res.json(ZonebyId);
+}))
+
+router.put("/updateZone/:id", errorHandling (async (req, res) => {
+    const {zname} = req.body;
+    const newZone = {};
+    if (zname) {
+        newZone.zname = zname
+    }
+
+    let updateZone = await Zone.findById(req.params.id);
+    if (!updateZone) {
+        return res.status(404).json({message: "Zone not found"});
+    }
+    updateZone = await Zone.findByIdAndUpdate (req.params.id, 
+        {$set: newZone},
+    {new: true});
+    res.json(updateZone);
+}))
+
+router.delete("/delZone/:id", errorHandling (async (req, res) => {
+    const deleteZone = await Zone.findByIdAndDelete(req.params.id);
+    if (!deleteZone) return res.status(404).json({message: "Zone not found"});
+    res.json({message: "Zone deleted successfully"})
+}))
+
 export default router;
