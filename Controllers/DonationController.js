@@ -5,7 +5,7 @@ import errorHandling from "../Middlewares/ErrorHandling.js";
 const router = express.Router();
 
 router.post("/receiveDonation", errorHandling(async (req, res) => {
-  const { donorId, donationType, amount, remarks, date } = req.body;
+  const { donorId, donationType, amount, paymentMode, remarks, date } = req.body;
 
   
   if (!donorId || !donationType || !amount) {
@@ -16,6 +16,7 @@ router.post("/receiveDonation", errorHandling(async (req, res) => {
     donor: donorId,
     donationType,
     amount,
+    paymentMode,
     remarks,
     date
   });
@@ -39,7 +40,7 @@ router.get ("/getDonationsById/:id", errorHandling(async (req, res) => {
       { path: "zoneId", select: "zname" },
       { path: "ucId", select: "uname" }
     ],
-    select: "name contact address"
+    select: "name contact address paymentMode"
   }).populate("donationType", "dontype")
   if(!DonById) return res.status(404).json({message: "Donation not found"})
     res.json(DonById)
@@ -47,7 +48,7 @@ router.get ("/getDonationsById/:id", errorHandling(async (req, res) => {
 
 
 router.put("/updateDonation/:id", errorHandling(async (req, res) => {
-  const { donorId, donationType, amount, remarks, date } = req.body;
+  const { donorId, donationType, amount, paymentMode, remarks, date } = req.body;
 
   if (!donorId || !donationType || !amount) {
     return res.status(400).json({ message: "Please enter complete donation details." });
@@ -59,6 +60,7 @@ router.put("/updateDonation/:id", errorHandling(async (req, res) => {
       donor: donorId,
       donationType,
       amount,
+      paymentMode,
       remarks,
       date
     },
@@ -71,7 +73,7 @@ router.put("/updateDonation/:id", errorHandling(async (req, res) => {
       { path: "zoneId", select: "zname" },
       { path: "ucId", select: "uname" }
     ],
-    select: "name contact address"
+    select: "name contact address paymentMode"
   })
     .populate("donationType", "dontype");
 

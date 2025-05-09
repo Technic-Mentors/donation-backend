@@ -12,6 +12,10 @@ const DonationSchema = new Schema({
     type: String,
     required: true, 
   },
+  paymentMode: {
+    type: String,
+    required: true, 
+  },
   donationType: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "DonationType",

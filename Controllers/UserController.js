@@ -90,7 +90,6 @@ router.put("/updateDonor/:id", errorHandling(async (req, res) => {
         });
     }
 
-    // Check for duplicate contact, excluding the current donor
     const contactExists = await User.findOne({ contact, _id: { $ne: id } });
     if (contactExists) {
         return res.status(400).json({
