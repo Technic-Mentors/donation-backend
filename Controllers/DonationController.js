@@ -40,7 +40,7 @@ router.get("/getReceivedDonations", errorHandling(async (req, res) => {
   res.json(donations);
 }));
 
-router.get("/getReceivedDonations/:id", errorHandling(async (req, res) => {
+router.get("/getReceivedDonationsById/:id", errorHandling(async (req, res) => {
   const donations = await Donation.findById(req.params.id)
     .populate({
       path: "donor",
