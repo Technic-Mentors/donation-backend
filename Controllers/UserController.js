@@ -5,21 +5,6 @@ import bcrypt from "bcryptjs"
 import upload from "../Middlewares/ImageFilter.js"
 import cloudinary from "../Cloudinary.js"
 const router = express.Router()
-// const adminUser = async () => {
-//     const [adminName, adminEmail, adminPassword, adminNumber] = ["Admin", "mailto:donationadmin@gmail.com", "1234", "admin Number"]
-//     const checkAdmin = await User.findOne({ email: adminEmail })
-//     if (checkAdmin) return null;
-//     const hashAdminPassword = await bcrypt.hash(adminPassword, 10)
-//     await User.create({
-//         name: adminName,
-//         email: adminEmail,
-//         password: hashAdminPassword,
-//         number: adminNumber,
-//         role: "Admin"
-//     })
-// }
-
-// adminUser()
 
 router.post("/addDonor", errorHandling (async (req, res) => {
     const {name, address, contact, districtId, zoneId, ucId} = req.body 
