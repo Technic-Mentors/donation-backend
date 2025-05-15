@@ -26,14 +26,6 @@ router.post("/receiveDonation", errorHandling(async (req, res) => {
 
 router.get("/getReceivedDonations", errorHandling(async (req, res) => {
   const donations = await Donation.find()
-    .populate("donor", "name contact address zoneId ditrictId ucId") 
-    .populate("donationType", "dontype")               
-
-  res.json(donations);
-}));
-
-router.get("/getReceivedDonations", errorHandling(async (req, res) => {
-  const donations = await Donation.find()
     .populate({
       path: "donor",
       select: "name contact address districtId zoneId ucId", // ✅ must include these
@@ -42,11 +34,32 @@ router.get("/getReceivedDonations", errorHandling(async (req, res) => {
         { path: "zoneId", model: "Zone", select: "zname" },
         { path: "ucId", model: "Uc", select: "uname" }
       ]
-    })
-    .populate("donationType", "dontype");
+    }) 
+    .populate("donationType", "dontype")               
 
   res.json(donations);
 }));
+
+router.get("/getReceivedDonations/:id", errorHandling(async (req, res) => {
+  const donations = await Donation.findById(req.params.id)
+    .populate({
+      path: "donor",
+      select: "name contact address districtId zoneId ucId",
+      populate: [
+        { path: "districtId", select: "district" },
+        { path: "zoneId", select: "zname" },
+        { path: "ucId", select: "uname" }
+      ]
+    })
+    .populate("donationType", "dontype");
+
+  if (!donations) {
+    return res.status(404).json({ error: "Donation not found" });
+  }
+
+  res.json(donations);
+}));
+
 
 
 
