@@ -28,14 +28,9 @@ router.get("/getReceivedDonations", errorHandling(async (req, res) => {
   const donations = await Donation.find()
     .populate({
       path: "donor",
-      select: "name contact address districtId zoneId ucId", // ✅ must include these
-      populate: [
-        { path: "districtId", model: "District", select: "district" },
-        { path: "zoneId", model: "Zone", select: "zname" },
-        { path: "ucId", model: "Uc", select: "uname" }
-      ]
-    }) 
-    .populate("donationType", "dontype")               
+      populate: ["districtId", "zoneId", "ucId"]
+    })
+    .populate("donationType", "dontype");
 
   res.json(donations);
 }));
