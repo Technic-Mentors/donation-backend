@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs"
 import upload from "../Middlewares/ImageFilter.js"
 import cloudinary from "../Cloudinary.js"
 const router = express.Router()
+
 const adminUser = async () => {
   const [adminName, adminEmail, adminPassword, adminContact, adminCnic] = [
     "Admin",

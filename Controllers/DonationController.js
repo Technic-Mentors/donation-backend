@@ -57,10 +57,6 @@ router.get("/getReceivedDonationsById/:id", errorHandling(async (req, res) => {
 
 
 
-
-
-
-
 router.put("/updateDonation/:id", errorHandling(async (req, res) => {
   const { donorId, donationType, amount, paymentMode, remarks, date } = req.body;
 
@@ -104,6 +100,66 @@ router.delete("/delDonation/:id", errorHandling (async (req, res) => {
   if (!delDonation) return res.status(404).json({message: "Donation not found"})
     res.json({message: "Donation deleted successfully"})
 }))
+
+router.get("/donationCount", errorHandling(async (req, res) => {
+    const donCount = await Donation.countDocuments()
+    res.json(donCount)
+}))
+
+
+
+
+router.get("/donationTotals", errorHandling(async (req, res) => {
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth() + 1;
+  const currentYear = currentDate.getFullYear();
+
+  const results = await Donation.aggregate([
+    {
+      $addFields: {
+        numericAmount: { $toDouble: "$amount" },
+        donationYear: { $year: "$date" },
+        donationMonth: { $month: "$date" }
+      }
+    },
+    {
+      $facet: {
+        monthly: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$donationMonth", currentMonth] },
+                  { $eq: ["$donationYear", currentYear] }
+                ]
+              }
+            }
+          },
+          { $group: { _id: null, total: { $sum: "$numericAmount" } } }
+        ],
+        yearly: [ // New yearly aggregation
+          {
+            $match: {
+              $expr: { $eq: ["$donationYear", currentYear] }
+            }
+          },
+          { $group: { _id: null, total: { $sum: "$numericAmount" } } }
+        ],
+        overall: [ // Keep this if you still want all-time total
+          { $group: { _id: null, total: { $sum: "$numericAmount" } } }
+        ]
+      }
+    }
+  ]);
+
+  res.json({
+    monthlyTotal: results[0].monthly[0]?.total || 0,
+    yearlyTotal: results[0].yearly[0]?.total || 0, // New field
+    overallTotal: results[0].overall[0]?.total || 0 // Optional
+  });
+}));
+
+
 
 
 export default router;
