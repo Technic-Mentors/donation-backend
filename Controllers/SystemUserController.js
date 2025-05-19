@@ -56,6 +56,49 @@ router.post("/addUser", upload.single("img"), errorHandling(async (req, res) => 
     res.json(newUser)
 }))
 
+
+router.put("/EditUserById/:id", upload.single("img"), errorHandling(async (req, res) => {
+    const { name, email, contact, cnic, roleId } = req.body;
+
+    // Simplified validation - removed password fields
+    if (!name || !email || !contact || !cnic || !roleId) {
+        return res.status(400).json({ message: "Please fill the required fields" });
+    }
+
+    // Check if contact number is being used by another user (excluding current user)
+    const existingUserWithContact = await SystemUser.findOne({ 
+        contact,
+        _id: { $ne: req.params.id } // Exclude current user from check
+    });
+
+    if (existingUserWithContact) {
+        return res.status(400).json({ message: "Contact number already in use by another user" });
+    }
+
+    let img_url;
+    if (req.file) {
+        const uploadImage = await cloudinary.uploader.upload(req.file.path);
+        img_url = uploadImage.secure_url;
+    }
+
+    const updateData = {
+        name,
+        contact,
+        cnic,
+        roleId,
+        ...(img_url && { img: img_url }) // Only update image if new one was uploaded
+    };
+
+    const updatedUser = await SystemUser.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        { new: true }
+    );
+
+    res.json(updatedUser);
+}));
+
+
 router.post("/signIn", errorHandling(async (req, res) => {
     const { email, password } = req.body
     if (!email || !password) return res.status(400).json({ message: "Email and password are required" })
@@ -72,47 +115,23 @@ router.get("/getUser", errorHandling(async (req, res) => {
     res.json(allUsers)
 })) 
 
+
 router.get("/getUserById/:id", errorHandling(async (req, res) => {
     const getUserById = await SystemUser.findById(req.params.id)
     if (!getUserById) return res.status(400).json({ message: "User not found" })
     res.json(getUserById)
 }))
 
-router.get("/titleUser/:title", errorHandling(async (req, res) => {
-    const getUserByTitle = await User.findOne({ name: req.params.title })
-    if (!getUserByTitle) return res.status(400).json({ message: "User not found" })
-    res.json(getUserByTitle)
-}))
+
 
 router.delete("/delUser/:id", errorHandling(async (req, res) => {
-    const delUserById = await User.findByIdAndDelete(req.params.id)
+    const delUserById = await SystemUser.findByIdAndDelete(req.params.id)
     if (!delUserById) return res.status(400).json({ message: "User not found" })
     res.json("user successfully deleted")
 }))
 
-router.get("/userCount", errorHandling(async (req, res) => {
-    const userCount = await User.countDocuments()
-    res.json(userCount)
-}))
 
-router.put("/updateUser/:id", upload.single("userImage"), errorHandling(async (req, res) => {
-    const { name, email, password, number, uploadCv } = req.body
-    const hashPassword = await bcrypt.hash(password, 10)
-    const changeUser = {}
-    if (name) changeUser.name = name
-    if (email) changeUser.email = email
-    if (password) changeUser.password = hashPassword
-    if (number) changeUser.number = number
-    if (uploadCv) changeUser.uploadCv = uploadCv
 
-    if (req.file) {
-        const uploadImage = await cloudinary.uploader.upload(req.file.path)
-        changeUser.userImage = uploadImage.secure_url
-    }
 
-    const updatedUser = await User.findByIdAndUpdate(req.params.id, { $set: changeUser }, { new: true })
-    if (!updatedUser) return res.status(400).json({ message: "User not found" })
-    res.json(updatedUser)
-}))
 
 export default router;
