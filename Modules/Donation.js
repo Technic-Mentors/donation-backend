@@ -61,7 +61,7 @@ DonationSchema.pre('save', async function(next) {
     );
     
     // Format: REC-YY-0001 (e.g. REC-24-0123)
-    this.receiptNumber = `REC-${year}-${counter.seq.toString().padStart(4, '0')}`;
+   this.receiptNumber = `DON-${counter.seq.toString().padStart(4, '0')}`;
   }
   next();
 });
