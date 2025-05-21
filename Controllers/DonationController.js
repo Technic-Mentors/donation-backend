@@ -133,16 +133,19 @@ router.get("/donationTotals", errorHandling(async (req, res) => {
   const currentMonth = currentDate.getMonth() + 1;
   const currentYear = currentDate.getFullYear();
 
-  // Add timezone awareness (critical for date matching)
-  const timezoneOffset = currentDate.getTimezoneOffset() / 60;
-  
   const results = await Donation.aggregate([
     {
       $addFields: {
-        numericAmount: { $toDouble: "$amount" },
-        // FIXED: Add timezone adjustment to date parsing
-        donationYear: { $year: { date: "$date", timezone: `${timezoneOffset}` } },
-        donationMonth: { $month: { date: "$date", timezone: `${timezoneOffset}` } }
+        // Convert amount string to number (SAFELY)
+        numericAmount: {
+          $cond: [
+            { $eq: [{ $type: "$amount" }, "string"] },
+            { $toDouble: { $trim: { input: "$amount" } } }, // Handles whitespace
+            { $toDouble: "$amount" } // Fallback for numbers
+          ]
+        },
+        donationYear: { $year: "$date" },
+        donationMonth: { $month: "$date" }
       }
     },
     {
@@ -150,12 +153,8 @@ router.get("/donationTotals", errorHandling(async (req, res) => {
         monthly: [
           {
             $match: {
-              $expr: {
-                $and: [
-                  { $eq: ["$donationMonth", currentMonth] },
-                  { $eq: ["$donationYear", currentYear] }
-                ]
-              }
+              donationMonth: currentMonth,
+              donationYear: currentYear
             }
           },
           { $group: { _id: null, total: { $sum: "$numericAmount" } } }
@@ -163,7 +162,7 @@ router.get("/donationTotals", errorHandling(async (req, res) => {
         yearly: [
           {
             $match: {
-              $expr: { $eq: ["$donationYear", currentYear] }
+              donationYear: currentYear
             }
           },
           { $group: { _id: null, total: { $sum: "$numericAmount" } } }
