@@ -4,10 +4,27 @@ import errorHandling from "../Middlewares/ErrorHandling.js";
 
 const router = express.Router();
 
+
+
+router.get("/nextReceiptNumber", errorHandling(async (req, res) => {
+  const lastDonation = await Donation.findOne().sort({ receiptNumber: -1 });
+  let nextNumber = 1;
+  
+  if (lastDonation?.receiptNumber) {
+    const parts = lastDonation.receiptNumber.split('-');
+    nextNumber = parseInt(parts[2]) + 1;
+  }
+  
+  const year = new Date().getFullYear().toString().slice(-2);
+  res.json({ nextReceiptNumber: `REC-${year}-${nextNumber.toString().padStart(4, '0')}` });
+}));
+
+
+
+
 router.post("/receiveDonation", errorHandling(async (req, res) => {
   const { donorId, donationType, amount, paymentMode, remarks, date } = req.body;
 
-  
   if (!donorId || !donationType || !amount) {
     return res.status(400).json({ message: "Please enter complete donation details." });
   }
@@ -21,7 +38,11 @@ router.post("/receiveDonation", errorHandling(async (req, res) => {
     date
   });
 
-  res.json(newDonation);
+  // Return the donation with the auto-generated receiptNumber
+  res.json({
+    ...newDonation.toObject(),
+    receiptNumber: newDonation.receiptNumber // Ensure this is included
+  });
 }));
 
 router.get("/getReceivedDonations", errorHandling(async (req, res) => {
@@ -107,19 +128,21 @@ router.get("/donationCount", errorHandling(async (req, res) => {
 }))
 
 
-
-
 router.get("/donationTotals", errorHandling(async (req, res) => {
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth() + 1;
   const currentYear = currentDate.getFullYear();
 
+  // Add timezone awareness (critical for date matching)
+  const timezoneOffset = currentDate.getTimezoneOffset() / 60;
+  
   const results = await Donation.aggregate([
     {
       $addFields: {
         numericAmount: { $toDouble: "$amount" },
-        donationYear: { $year: "$date" },
-        donationMonth: { $month: "$date" }
+        // FIXED: Add timezone adjustment to date parsing
+        donationYear: { $year: { date: "$date", timezone: `${timezoneOffset}` } },
+        donationMonth: { $month: { date: "$date", timezone: `${timezoneOffset}` } }
       }
     },
     {
@@ -137,7 +160,7 @@ router.get("/donationTotals", errorHandling(async (req, res) => {
           },
           { $group: { _id: null, total: { $sum: "$numericAmount" } } }
         ],
-        yearly: [ // New yearly aggregation
+        yearly: [
           {
             $match: {
               $expr: { $eq: ["$donationYear", currentYear] }
@@ -145,7 +168,7 @@ router.get("/donationTotals", errorHandling(async (req, res) => {
           },
           { $group: { _id: null, total: { $sum: "$numericAmount" } } }
         ],
-        overall: [ // Keep this if you still want all-time total
+        overall: [
           { $group: { _id: null, total: { $sum: "$numericAmount" } } }
         ]
       }
@@ -154,12 +177,25 @@ router.get("/donationTotals", errorHandling(async (req, res) => {
 
   res.json({
     monthlyTotal: results[0].monthly[0]?.total || 0,
-    yearlyTotal: results[0].yearly[0]?.total || 0, // New field
-    overallTotal: results[0].overall[0]?.total || 0 // Optional
+    yearlyTotal: results[0].yearly[0]?.total || 0,
+    overallTotal: results[0].overall[0]?.total || 0
   });
 }));
 
 
+router.get("/checkDonationDates", async (req, res) => {
+  const docs = await Donation.find().sort({ date: -1 }).limit(5);
+  
+  const results = docs.map(doc => ({
+    _id: doc._id,
+    amount: doc.amount,
+    storedDate: doc.date,
+    localDate: new Date(doc.date).toLocaleString(),
+    month: new Date(doc.date).getMonth() + 1,
+    year: new Date(doc.date).getFullYear()
+  }));
 
+  res.json(results);
+});
 
 export default router;
