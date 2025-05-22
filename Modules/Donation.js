@@ -43,7 +43,7 @@ const DonationSchema = new Schema({
   },
   receivedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+    ref: "SystemUser",
     required: false,
   },
 });
