@@ -117,7 +117,7 @@ router.get("/getUser", errorHandling(async (req, res) => {
 
 
 router.get("/getUserById/:id", errorHandling(async (req, res) => {
-    const getUserById = await SystemUser.findById(req.params.id).populate("roleId")
+    const getUserById = await SystemUser.findById(req.params.id).populate("roleId", "role")
     if (!getUserById) return res.status(400).json({ message: "User not found" })
     res.json(getUserById)
 }))
