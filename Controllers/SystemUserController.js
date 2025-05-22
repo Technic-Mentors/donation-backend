@@ -117,7 +117,10 @@ router.get("/getUser", errorHandling(async (req, res) => {
 
 
 router.get("/getUserById/:id", errorHandling(async (req, res) => {
-    const getUserById = await SystemUser.findById(req.params.id).populate("roleId", "role")
+    const getUserById = await SystemUser.findById(req.params.id).populate({
+      path: "roleId",
+      select: "role" // Explicitly select only the role field
+    });
     if (!getUserById) return res.status(400).json({ message: "User not found" })
     res.json(getUserById)
 }))
@@ -129,9 +132,5 @@ router.delete("/delUser/:id", errorHandling(async (req, res) => {
     if (!delUserById) return res.status(400).json({ message: "User not found" })
     res.json("user successfully deleted")
 }))
-
-
-
-
 
 export default router;
